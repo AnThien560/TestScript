@@ -279,15 +279,6 @@ namespace TestScript
                 string dateXpath = $"//td[@title='{birthday}']";
                 driver.FindElement(By.XPath(dateXpath)).Click();
                 }
-                try
-                {
-                    IWebElement decadePopup = driver.FindElement(By.ClassName("ant-picker-decade-btn"));
-                    if (decadePopup.Displayed)
-                    {
-                        decadePopup.Click(); // Đóng popup thập kỷ nếu đang mở
-                    }
-                }
-                catch (NoSuchElementException) { }
 
                 ClearAndType(By.Id("phoneNum"), phone);
                 ClearAndType(By.Id("idenCard"), idencard);
