@@ -80,7 +80,7 @@ namespace TestScript
 
                     for (int row = 2; row <= rowCount; row++) // Bỏ qua header
                     {
-                        int rowIndex = row - 2; // ✅ Đảm bảo lưu chỉ số dòng
+                        int rowIndex = row - 2; //  Đảm bảo lưu chỉ số dòng
                         string name = worksheet.Cells[row, 2].Text;
                         string email = worksheet.Cells[row, 3].Text;
                         string birthday = worksheet.Cells[row, 4].Text;
@@ -103,12 +103,12 @@ namespace TestScript
             {
                 try
                 {
-                    Console.WriteLine($"📝 Đang ghi kết quả vào file: {filePath}");
-                    Console.WriteLine($"📌 Sheet: {sheetName}, Row: {rowIndex}, Actual: {actuals}, Result: {result}");
+                    Console.WriteLine($" Đang ghi kết quả vào file: {filePath}");
+                    Console.WriteLine($" Sheet: {sheetName}, Row: {rowIndex}, Actual: {actuals}, Result: {result}");
 
                     if (!File.Exists(filePath))
                     {
-                        Console.WriteLine($"⚠ File không tồn tại: {filePath}");
+                        Console.WriteLine($" File không tồn tại: {filePath}");
                         return;
                     }
 
@@ -118,24 +118,24 @@ namespace TestScript
 
                         if (worksheet == null)
                         {
-                            Console.WriteLine($"⚠ Không tìm thấy sheet '{sheetName}'");
+                            Console.WriteLine($" Không tìm thấy sheet '{sheetName}'");
                             return;
                         }
 
                         int rowToWrite = rowStart + rowIndex;
-                        Console.WriteLine($"✍ Ghi giá trị {actuals} vào hàng {rowToWrite}, cột {colIndexActual}");
-                        Console.WriteLine($"✍ Ghi giá trị '{result}' vào hàng {rowToWrite}, cột {colIndexActual + 1}");
+                        Console.WriteLine($" Ghi giá trị {actuals} vào hàng {rowToWrite}, cột {colIndexActual}");
+                        Console.WriteLine($" Ghi giá trị '{result}' vào hàng {rowToWrite}, cột {colIndexActual + 1}");
 
                         worksheet.Cells[rowToWrite, colIndexActual].Value = actuals;
                         worksheet.Cells[rowToWrite, colIndexActual].Value = result;
 
                         package.Save();
-                        Console.WriteLine("✅ File đã được cập nhật!");
+                        Console.WriteLine(" File đã được cập nhật!");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"⚠ Lỗi khi ghi Excel: {ex.Message}");
+                    Console.WriteLine($" Lỗi khi ghi Excel: {ex.Message}");
                 }
             }
         }
