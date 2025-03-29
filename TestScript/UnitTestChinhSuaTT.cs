@@ -77,28 +77,44 @@ namespace TestScript
                 using (var package = new ExcelPackage(new FileInfo(filePath)))
                 {
                     var worksheet = package.Workbook.Worksheets[0];
-                    int rowCount = worksheet.Dimension.Rows;
+                    int rowCount = Math.Min(worksheet.Dimension.Rows, 35); 
 
-                    for (int row = 2; row <= rowCount; row++) // Bỏ qua header
+                    for (int row = 6; row <= rowCount; row++) 
                     {
-                        int rowIndex = row - 2; //  Đảm bảo lưu chỉ số dòng
-                        string name = worksheet.Cells[row, 2].Text;
-                        string email = worksheet.Cells[row, 3].Text;
-                        string birthday = worksheet.Cells[row, 4].Text;
-                        string phone = worksheet.Cells[row, 5].Text;
-                        string idencard = worksheet.Cells[row, 6].Text;
-                        string avatar = worksheet.Cells[row, 7].Text;
-                        bool expectedResult = worksheet.Cells[row, 8].Text.ToLower() == "true";
+                        int rowIndex = row - 6; 
+                        string cellData = worksheet.Cells[row, 5].Text; 
 
-                        testCases.Add(new TestCaseData(rowIndex, name, email, birthday, phone, idencard, avatar, expectedResult));
+                        string name = ExtractValue(cellData, "Tên:");
+                        string email = ExtractValue(cellData, "Email:");
+                        string birthday = ExtractValue(cellData, "Ngày sinh:");
+                        string phone = ExtractValue(cellData, "SĐT:");
+                        string idencard = ExtractValue(cellData, "CCCD:");
+                        string avatar = ExtractValue(cellData, "Avatar Link:");
+                        string actual = worksheet.Cells[row, 6].Text; 
+                        string expect = worksheet.Cells[row, 7].Text; 
+                        bool status = actual.Equals(expect); 
+
+                        testCases.Add(new TestCaseData(rowIndex, name, email, birthday, phone, idencard, avatar, status));
+                        worksheet.Cells[row, 8].Value = status; 
+
                     }
                 }
 
                 return testCases;
             }
 
-            private static int rowStart = 2; // Vị trí dòng bắt đầu ghi kết quả
-            private static int colIndexActual = 9; // Cột kết quả thực tế
+            private static string ExtractValue(string data, string key)
+            {
+                int startIndex = data.IndexOf(key);
+                if (startIndex == -1) return string.Empty;
+                startIndex += key.Length;
+                int endIndex = data.IndexOf('\n', startIndex);
+                if (endIndex == -1) endIndex = data.Length;
+                return data.Substring(startIndex, endIndex - startIndex).Trim();
+            }
+
+            private static int rowStart = 3; 
+            private static int colIndexActual = 8; 
 
             public static void WriteResultToExcel(string filePath, string sheetName, int rowIndex, bool actuals, string result)
             {
@@ -143,8 +159,8 @@ namespace TestScript
 
         public static class TestData
         {
-            public static string LongName = new string('A', 150); // Chuỗi dài 150 ký tự
-            public static string LongEmail = new string('a', 95) + "@gmail.com"; // Email dài hơn 100 ký tự
+            public static string LongName = new string('A', 150); 
+            public static string LongEmail = new string('a', 95) + "@gmail.com"; 
         }
 
         public static IEnumerable<TestCaseData> GetTestCasesValid()
@@ -267,14 +283,12 @@ namespace TestScript
 
                 var editButton = wait.Until(d => d.FindElement(By.XPath("//button[span[text()='Chỉnh sửa thông tin']]")));
                 ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].scrollIntoView(true);", editButton);
-                Thread.Sleep(1000);
                 editButton.Click();
 
                 ClearAndType(By.Id("ownerName"), name);
                 ClearAndType(By.Id("email"), email);
                 ClearAndType(By.Id("birthday"), birthday);
 
-                // Chọn ngày tháng theo TestCase
                 if (!birthday.Equals("")) { 
                 string dateXpath = $"//td[@title='{birthday}']";
                 driver.FindElement(By.XPath(dateXpath)).Click();
@@ -283,32 +297,30 @@ namespace TestScript
                 ClearAndType(By.Id("phoneNum"), phone);
                 ClearAndType(By.Id("idenCard"), idencard);
                 driver.FindElement(By.Id("avatarLink")).SendKeys(avatar);
-                Thread.Sleep(5000);
 
                 driver.FindElement(By.XPath("//button[contains(@class, 'ant-btn-primary')]/span[text()='Chỉnh sửa']")).Click();
 
-                // Kiểm tra thông báo
                 bool isSuccess = false;
                 try
                 {
                     IWebElement successMessage = wait.Until(d =>
                     {
                         var elements = d.FindElements(By.XPath(
-                            "//div[contains(@class, 'font-bold') and contains(@class, 'text-[20px]') and contains(@style, 'color: green')]"
+                            "//div[contains(@class, 'font-bold') and contains(@class, 'text-[20px]') and contains(text(), 'Cập nhật thành công') and contains(@style, 'color: green')]"
                         ));
                         return elements.Count > 0 ? elements[0] : null;
                     });
 
-                    isSuccess = successMessage != null && successMessage.Text.Contains("Cập nhật thành công");
+                    isSuccess = successMessage != null;
+                    Console.WriteLine();
                 }
                 catch (WebDriverTimeoutException)
                 {
-                    isSuccess = false; // Không thấy thông báo thành công
+                    isSuccess = false; 
                 }
 
-                // Kiểm tra kết quả có đúng với mong đợi không
                 string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestData", "testcaseEdit.xlsx");
-                ExcelDataProvider.WriteResultToExcel(filePath, "Sheet1", rowIndex, isSuccess, isSuccess ? "Passed" : "Failed");
+                ExcelDataProvider.WriteResultToExcel(filePath, "Bug", rowIndex, isSuccess, isSuccess == expectedResult ? "Passed" : "Failed");
 
                 Assert.That(isSuccess, Is.EqualTo(expectedResult), $"Expected: {expectedResult}, but got: {isSuccess}");
                 
@@ -357,7 +369,6 @@ namespace TestScript
                 driver.FindElement(By.XPath("//button[contains(@class, 'ant-btn-primary')]/span[text()='Chỉnh sửa']")).Click();
                 Thread.Sleep(1000);
 
-                // Kiểm tra thông báo cập nhật thành công
                 bool isSuccess = false;
                 try
                 {
@@ -373,7 +384,7 @@ namespace TestScript
                 }
                 catch (WebDriverTimeoutException)
                 {
-                    isSuccess = false; // Không thấy thông báo thành công
+                    isSuccess = false; 
                 }
 
                 Assert.That(isSuccess, Is.True, "Cập nhật thông tin không thành công!");
@@ -392,16 +403,13 @@ namespace TestScript
             {
                 WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
 
-                // Điều hướng đến trang "Tài khoản"
                 driver.FindElement(By.XPath("//li[contains(@class, 'ant-menu-item')]/span/p[text()='Tài khoản']")).Click();
                 wait.Until(d => d.Url.Contains("/owner/Profile"));
 
-                // Nhấn nút "Chỉnh sửa thông tin"
                 var editButton = wait.Until(d => d.FindElement(By.XPath("//button[span[text()='Chỉnh sửa thông tin']]")));
                 ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].scrollIntoView(true);", editButton);
                 editButton.Click();
 
-                // Nhập thông tin vào các trường
                 ClearAndType(By.Id("ownerName"), name);
                 ClearAndType(By.Id("email"), email);
                 ClearAndType(By.Id("birthday"), birthday);
@@ -416,16 +424,13 @@ namespace TestScript
                 ClearAndType(By.Id("idenCard"), idencard);
                 driver.FindElement(By.Id("avatarLink")).SendKeys(avatar);
 
-                // Nhấn nút "Chỉnh sửa"
                 driver.FindElement(By.XPath("//button[contains(@class, 'ant-btn-primary')]/span[text()='Chỉnh sửa']")).Click();
 
-                // Kiểm tra nếu có thông báo lỗi
                 bool hasError = false;
                 List<string> errorMessages = new List<string>();
 
                 try
                 {
-                    // Chờ lỗi xuất hiện trong vòng 5 giây
                     wait.Until(d =>
                     {
                         var errors = d.FindElements(By.XPath("//div[contains(@class, 'ant-form-item-explain-error')]"));
@@ -443,14 +448,12 @@ namespace TestScript
                     hasError = false;
                 }
 
-                // In debug log nếu có lỗi
                 Console.WriteLine($"Số lượng lỗi tìm thấy: {errorMessages.Count}");
                 foreach (var msg in errorMessages)
                 {
                     Console.WriteLine($"Lỗi: {msg}");
                 }
 
-                // Kiểm tra kết quả
                 Assert.That(hasError, Is.True, "Cập nhật không hợp lệ nhưng hệ thống vẫn cho phép cập nhật!");
             }
             catch (Exception ex)
